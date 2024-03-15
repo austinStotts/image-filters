@@ -20,7 +20,7 @@ fn main() -> anyhow::Result<()> {
         .block_on()?;
 
 
-    // CHANGE INPUT FEIL HERE!
+    // CHANGE INPUT FILE HERE!
 
     let input_image = image::load_from_memory(include_bytes!("cat.png"))?.to_rgba8();
     let (width, height) = input_image.dimensions();
