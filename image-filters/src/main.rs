@@ -1,5 +1,9 @@
+
+
+
 fn main() -> anyhow::Result<()> {
     use pollster::FutureExt;
+
 
 
     let instance = wgpu::Instance::new(wgpu::Backends::all());
@@ -15,9 +19,11 @@ fn main() -> anyhow::Result<()> {
         .request_device(&Default::default(), None)
         .block_on()?;
 
+
+    // CHANGE INPUT FEIL HERE!
+
     let input_image = image::load_from_memory(include_bytes!("cat.png"))?.to_rgba8();
     let (width, height) = input_image.dimensions();
-
 
     let texture_size = wgpu::Extent3d {
         width,
@@ -35,23 +41,16 @@ fn main() -> anyhow::Result<()> {
         usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
     });
 
-
-
-
-
     queue.write_texture(
         input_texture.as_image_copy(),
         bytemuck::cast_slice(input_image.as_raw()),
         wgpu::ImageDataLayout {
             offset: 0,
             bytes_per_row: std::num::NonZeroU32::new(4 * width),
-            rows_per_image: None, // Doesn't need to be specified as we are writing a single image.
+            rows_per_image: None,
         },
         texture_size,
     );
-
-
-
 
     let output_texture = device.create_texture(&wgpu::TextureDescriptor {
         label: Some("output texture"),
@@ -66,19 +65,24 @@ fn main() -> anyhow::Result<()> {
 
 
 
-    let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: Some("sobel shader"),
-        source: wgpu::ShaderSource::Wgsl(include_str!("grayscale.wgsl").into()),
-    });
-    
 
+
+
+    // CHANGE SHADER HERE!
+
+    let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        label: Some("sobel edge filter"),
+        source: wgpu::ShaderSource::Wgsl(include_str!("../shaders/sobel-edge-negative.wgsl").into()),
+    });
 
     let pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-        label: Some("sobel pipeline"),
+        label: Some("compute shader pipeline"),
         layout: None,
         module: &shader,
-        entry_point: "grayscale_main",
+        entry_point: "main",
     });
+
+
 
 
 
@@ -135,7 +139,7 @@ fn main() -> anyhow::Result<()> {
         let (dispatch_with, dispatch_height) =
             compute_work_group_count((texture_size.width, texture_size.height), (16, 16));
         let mut compute_pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
-            label: Some("sobel pass"),
+            label: Some("compute pass"),
         });
         compute_pass.set_pipeline(&pipeline);
         compute_pass.set_bind_group(0, &texture_bind_group, &[]);
@@ -227,7 +231,10 @@ fn main() -> anyhow::Result<()> {
 
     if let Some(output_image) = image::ImageBuffer::<image::Rgba<u8>, _>::from_raw(width, height, &pixels[..])
     {
-        output_image.save("cat-sobel.png")?;
+        // CHANGE OUTPUT FILE HERE!
+
+        // output_image.save("cat-sobel-negative.png")?;
+        output_image.save("cat-sobel-negative.png")?;
     }
 
 
@@ -235,5 +242,6 @@ fn main() -> anyhow::Result<()> {
 
 
 }
+
 
 
